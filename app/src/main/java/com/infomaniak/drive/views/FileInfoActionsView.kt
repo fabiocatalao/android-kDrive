@@ -152,7 +152,9 @@ class FileInfoActionsView @JvmOverloads constructor(
 
         addFavorites.isVisible = rights.canUseFavorite == true && !isSharedWithMe
         availableOffline.isGone = isSharedWithMe // Is it still needed to add `|| currentFile.getOfflineFile(context) == null`
-        deleteFile.isVisible = rights.canDelete == true && !file.isImporting() && !isSharedWithMe
+        val canDelete = rights.canDelete == true && !file.isImporting() && !isSharedWithMe
+        deleteFile.isVisible = canDelete
+        fileView.quickDeleteButton.isVisible = canDelete
         downloadFile.isVisible = rights.canRead == true
         duplicateFile.isGone = rights.canRead == false
                 || isSharedWithMe
@@ -296,6 +298,7 @@ class FileInfoActionsView @JvmOverloads constructor(
         duplicateFile.setOnClickListener { onItemClickListener.duplicateFileClicked(selectFolderResultLauncher, mainViewModel) }
         renameFile.setOnClickListener { onItemClickListener.renameFileClicked() }
         deleteFile.setOnClickListener { onItemClickListener.deleteFileClicked() }
+        fileView.quickDeleteButton.setOnClickListener { onItemClickListener.deleteFileClicked() }
         goToFolder.setOnClickListener { onItemClickListener.goToFolder() }
     }
 

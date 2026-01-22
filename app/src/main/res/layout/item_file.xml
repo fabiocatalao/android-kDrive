@@ -200,6 +200,17 @@
             android:visibility="gone"
             app:icon="@drawable/ic_close"
             app:iconTint="@color/primaryText" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/quickDeleteButton"
+            style="@style/IconButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/modalMoveTrashTitle"
+            android:visibility="gone"
+            app:icon="@drawable/ic_bin"
+            app:iconSize="22dp"
+            app:iconTint="@color/primaryText" />
     </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

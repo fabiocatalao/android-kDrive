@@ -5,10 +5,8 @@ import android.os.Looper
 import android.view.GestureDetector
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
-import android.view.View
 import androidx.core.view.GestureDetectorCompat
 import androidx.recyclerview.widget.RecyclerView
-import kotlin.math.abs
 
 /**
  * Touch listener that enables drag-to-select functionality in a RecyclerView.
@@ -25,12 +23,16 @@ class DragSelectTouchListener(
         fun isMultiSelectOn(): Boolean
         fun onDragSelectStarted(startPosition: Int)
         fun onDragSelectChanged(start: Int, end: Int)
+        fun onDragSelectRangeDeselected(start: Int, end: Int)
         fun onDragSelectFinished()
         fun isPositionSelectable(position: Int): Boolean
     }
 
     private var isDragSelecting = false
+    private var dragAnchorPosition = RecyclerView.NO_POSITION
     private var lastSelectedPosition = RecyclerView.NO_POSITION
+    private var selectionMinBound = RecyclerView.NO_POSITION
+    private var selectionMaxBound = RecyclerView.NO_POSITION
 
     private val autoScrollHandler = Handler(Looper.getMainLooper())
     private var autoScrollVelocity = 0
@@ -59,7 +61,10 @@ class DragSelectTouchListener(
                 recyclerView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
 
                 isDragSelecting = true
+                dragAnchorPosition = position
                 lastSelectedPosition = position
+                selectionMinBound = position
+                selectionMaxBound = position
                 callback.onDragSelectStarted(position)
             }
         }
@@ -123,15 +128,38 @@ class DragSelectTouchListener(
             autoScrollHandler.removeCallbacks(autoScrollRunnable)
         }
 
-        // Find and select item under finger
+        // Find and select/deselect item under finger
         val child = recyclerView.findChildViewUnder(e.x, y)
         if (child != null) {
             val currentPosition = recyclerView.getChildAdapterPosition(child)
             if (currentPosition != RecyclerView.NO_POSITION && currentPosition != lastSelectedPosition) {
-                // Select all items in range between last position and current position
-                val start = minOf(lastSelectedPosition, currentPosition)
-                val end = maxOf(lastSelectedPosition, currentPosition)
-                callback.onDragSelectChanged(start, end)
+                // Calculate new selection range from anchor to current position
+                val newMin = minOf(dragAnchorPosition, currentPosition)
+                val newMax = maxOf(dragAnchorPosition, currentPosition)
+
+                // Deselect items that are no longer in the selection range
+                // Items below the new minimum that were previously selected
+                if (newMin > selectionMinBound) {
+                    callback.onDragSelectRangeDeselected(selectionMinBound, newMin - 1)
+                }
+                // Items above the new maximum that were previously selected
+                if (newMax < selectionMaxBound) {
+                    callback.onDragSelectRangeDeselected(newMax + 1, selectionMaxBound)
+                }
+
+                // Select items in the new range that weren't previously selected
+                // New items below the old minimum
+                if (newMin < selectionMinBound) {
+                    callback.onDragSelectChanged(newMin, selectionMinBound - 1)
+                }
+                // New items above the old maximum
+                if (newMax > selectionMaxBound) {
+                    callback.onDragSelectChanged(selectionMaxBound + 1, newMax)
+                }
+
+                // Update bounds to track the current selection range
+                selectionMinBound = newMin
+                selectionMaxBound = newMax
                 lastSelectedPosition = currentPosition
             }
         }
@@ -140,7 +168,10 @@ class DragSelectTouchListener(
     private fun stopDragSelection() {
         if (isDragSelecting) {
             isDragSelecting = false
+            dragAnchorPosition = RecyclerView.NO_POSITION
             lastSelectedPosition = RecyclerView.NO_POSITION
+            selectionMinBound = RecyclerView.NO_POSITION
+            selectionMaxBound = RecyclerView.NO_POSITION
             autoScrollVelocity = 0
             autoScrollHandler.removeCallbacks(autoScrollRunnable)
             callback.onDragSelectFinished()

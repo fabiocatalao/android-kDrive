@@ -140,6 +140,24 @@ open class FileAdapter(
 
     fun getFiles() = fileList
 
+    fun getFileAtPosition(position: Int): File? {
+        return if (position >= 0 && position < fileList.size) fileList[position] else null
+    }
+
+    fun selectFileAtPosition(position: Int) {
+        val file = getFileAtPosition(position) ?: return
+        if (!file.isUsable() || multiSelectManager.isSelectedFile(file)) return
+
+        onFileSelected(file, true)
+        notifyItemChanged(position, multiSelectManager.isSelectedFile(file))
+    }
+
+    fun selectFilesInRange(start: Int, end: Int) {
+        for (position in start..end) {
+            selectFileAtPosition(position)
+        }
+    }
+
     fun showLoading() {
         if (!showLoading) {
             showLoading = true

@@ -553,6 +553,8 @@ open class FileListFragment : MultiSelectFragment(
             setPagination({ if (!fileAdapter.isComplete) fileAdapter.showLoading() })
         }
 
+        if (enabledMultiSelectMode) setupDragSelection()
+
         mainViewModel.updateOfflineFile.observe(viewLifecycleOwner) { fileId ->
             if (findNavController().currentDestination?.id == R.id.offlineFileFragment) {
                 fileAdapter.deleteByFileId(fileId)
@@ -575,6 +577,38 @@ open class FileListFragment : MultiSelectFragment(
             val mainApp = requireContext().applicationContext as MainApplication
             newImageLoader = mainApp.newImageLoader(ImageLoaderType.SpecificUser(userDrive.userId))
         }
+    }
+
+    private fun setupDragSelection() {
+        val dragSelectTouchListener = DragSelectTouchListener(
+            recyclerView = binding.fileRecyclerView,
+            callback = object : DragSelectTouchListener.DragSelectCallback {
+                override fun isMultiSelectAuthorized() = multiSelectManager.isMultiSelectAuthorized
+                override fun isMultiSelectOn() = multiSelectManager.isMultiSelectOn
+
+                override fun onDragSelectStarted(startPosition: Int) {
+                    if (!multiSelectManager.isMultiSelectOn) {
+                        openMultiSelect()
+                    }
+                    binding.swipeRefreshLayout.isEnabled = false
+                    fileAdapter.selectFileAtPosition(startPosition)
+                }
+
+                override fun onDragSelectChanged(start: Int, end: Int) {
+                    fileAdapter.selectFilesInRange(start, end)
+                }
+
+                override fun onDragSelectFinished() {
+                    // SwipeRefresh stays disabled while in multi-select mode
+                }
+
+                override fun isPositionSelectable(position: Int): Boolean {
+                    val file = fileAdapter.getFileAtPosition(position) ?: return false
+                    return file.isUsable() && !file.isImporting() && position < fileAdapter.fileList.size
+                }
+            }
+        )
+        binding.fileRecyclerView.addOnItemTouchListener(dragSelectTouchListener)
     }
 
     private fun getFunctionByFileType(): (File) -> Unit = { file ->

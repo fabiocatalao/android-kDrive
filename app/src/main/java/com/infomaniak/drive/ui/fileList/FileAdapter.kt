@@ -158,6 +158,20 @@ open class FileAdapter(
         }
     }
 
+    fun deselectFileAtPosition(position: Int) {
+        val file = getFileAtPosition(position) ?: return
+        if (!multiSelectManager.isSelectedFile(file)) return
+
+        onFileSelected(file, false)
+        notifyItemChanged(position, multiSelectManager.isSelectedFile(file))
+    }
+
+    fun deselectFilesInRange(start: Int, end: Int) {
+        for (position in start..end) {
+            deselectFileAtPosition(position)
+        }
+    }
+
     fun showLoading() {
         if (!showLoading) {
             showLoading = true

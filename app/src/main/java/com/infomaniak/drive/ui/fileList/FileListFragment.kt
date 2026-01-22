@@ -598,6 +598,10 @@ open class FileListFragment : MultiSelectFragment(
                     fileAdapter.selectFilesInRange(start, end)
                 }
 
+                override fun onDragSelectRangeDeselected(start: Int, end: Int) {
+                    fileAdapter.deselectFilesInRange(start, end)
+                }
+
                 override fun onDragSelectFinished() {
                     // SwipeRefresh stays disabled while in multi-select mode
                 }

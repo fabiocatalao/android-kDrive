@@ -1,0 +1,14 @@
+// Gradle init script used by the fork-sync workflow (passed with `--init-script`).
+//
+// kDrive's release builds bundle sources and upload them, along with native symbols, to Infomaniak's
+// Sentry. This fork has no credentials for it, so those tasks are skipped. Nothing else is changed.
+
+def skippedTaskPrefixes = ['sentryUpload', 'uploadSentry', 'sentryBundleSources']
+
+allprojects {
+    tasks.configureEach { task ->
+        if (skippedTaskPrefixes.any { task.name.startsWith(it) }) {
+            task.enabled = false
+        }
+    }
+}

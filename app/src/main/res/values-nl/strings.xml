@@ -465,10 +465,6 @@
     <string name="fileTypeFilterTitle">Bestandstype</string>
     <string name="filtersTitle">Filters</string>
     <string name="folderDescription">Privé- of gedeelde map</string>
-    <string name="gallerySortDateAdded">Datum toegevoegd</string>
-    <string name="gallerySortDateModified">Wijzigingsdatum</string>
-    <string name="gallerySortDateTaken">Opnamedatum</string>
-    <string name="gallerySortTitle">Sorteren op</string>
     <string name="galleryTitle">Galerij</string>
     <string name="hintInputDirName">Mapnaam</string>
     <string name="hintInputFileName">Bestandsnaam</string>

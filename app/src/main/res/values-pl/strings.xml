@@ -515,10 +515,6 @@
     <string name="fileTypeFilterTitle">Typ pliku</string>
     <string name="filtersTitle">Filtry</string>
     <string name="folderDescription">Folder prywatny lub udostępniony</string>
-    <string name="gallerySortDateAdded">Data dodania</string>
-    <string name="gallerySortDateModified">Data modyfikacji</string>
-    <string name="gallerySortDateTaken">Data wykonania</string>
-    <string name="gallerySortTitle">Sortuj według</string>
     <string name="galleryTitle">Galeria</string>
     <string name="hintInputDirName">Nazwa folderu</string>
     <string name="hintInputFileName">Nazwa pliku</string>

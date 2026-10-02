@@ -24,24 +24,15 @@ import com.infomaniak.drive.data.api.ApiRepository
 import com.infomaniak.drive.data.api.CursorApiResponse
 import com.infomaniak.drive.data.cache.FileController
 import com.infomaniak.drive.data.models.File
-import com.infomaniak.drive.data.models.UiSettings
 import com.infomaniak.drive.utils.IsComplete
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import splitties.init.appCtx
 
 class GalleryViewModel : ViewModel() {
 
-    private val uiSettings = UiSettings(appCtx)
-
     val period = MutableStateFlow(GalleryPeriod.MONTH)
-
-    private val _sort = MutableStateFlow(uiSettings.gallerySort)
-    val sort: StateFlow<GallerySort> = _sort.asStateFlow()
 
     private var getGalleryJob: Job? = null
 
@@ -63,11 +54,6 @@ class GalleryViewModel : ViewModel() {
         }
     }
 
-    fun setSort(newSort: GallerySort) {
-        uiSettings.gallerySort = newSort
-        _sort.value = newSort
-    }
-
     fun restoreGalleryFiles() {
         if (needToRestoreFiles) {
             val isComplete = galleryApiResult.value?.second ?: true
@@ -82,9 +68,8 @@ class GalleryViewModel : ViewModel() {
         cursor: String? = null,
     ) {
         getGalleryJob?.cancel()
-        val requestedSort = sort.value
         getGalleryJob = viewModelScope.launch(Dispatchers.IO) {
-            val result = getLastGallery(driveId, ignoreCloud, isFirstPage, cursor, requestedSort) ?: return@launch
+            val result = getLastGallery(driveId, ignoreCloud, isFirstPage, cursor)
             galleryApiResult.postValue(result)
             lastGalleryFiles.addAll(result.first)
         }
@@ -95,36 +80,25 @@ class GalleryViewModel : ViewModel() {
         ignoreCloud: Boolean,
         isFirstPage: Boolean,
         cursor: String?,
-        sort: GallerySort,
-    ): Pair<ArrayList<File>, IsComplete>? {
+    ): Pair<ArrayList<File>, IsComplete> {
         getGalleryJob?.cancel()
         getGalleryJob = Job()
 
-        return if (ignoreCloud) emitRealmGallery(sort) else fetchApiGallery(driveId, isFirstPage, cursor, sort)
+        return if (ignoreCloud) emitRealmGallery() else fetchApiGallery(driveId, isFirstPage, cursor)
     }
 
-    private fun emitRealmGallery(sort: GallerySort): Pair<ArrayList<File>, Boolean> {
+    private fun emitRealmGallery(): Pair<ArrayList<File>, Boolean> {
         currentCursor = null
-        // The cached gallery keeps the order of the last API call, which may have used another sort
-        val files = FileController.getGalleryDrive().sortedByDescending(sort::dateOf)
-        return ArrayList(files) to true
+        return FileController.getGalleryDrive() to true
     }
 
-    /** Returns null when the sort changed while the request was running, as its result would be out of order. */
-    private fun fetchApiGallery(
-        driveId: Int,
-        isFirstPage: Boolean,
-        cursor: String?,
-        requestedSort: GallerySort,
-    ): Pair<ArrayList<File>, Boolean>? {
-        val apiResponse = ApiRepository.getLastGallery(driveId = driveId, sortType = requestedSort.sortType, cursor = cursor)
-        if (requestedSort != sort.value) return null
-
+    private fun fetchApiGallery(driveId: Int, isFirstPage: Boolean, cursor: String?): Pair<ArrayList<File>, Boolean> {
+        val apiResponse = ApiRepository.getLastGallery(driveId = driveId, cursor = cursor)
         return if (apiResponse.isSuccess()) {
             currentCursor = apiResponse.cursor
             emitApiGallery(apiResponse, isFirstPage)
         } else {
-            emitRealmGallery(requestedSort)
+            emitRealmGallery()
         }
     }
 

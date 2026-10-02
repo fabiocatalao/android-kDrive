@@ -465,10 +465,6 @@
     <string name="fileTypeFilterTitle">Filtyp</string>
     <string name="filtersTitle">Filter</string>
     <string name="folderDescription">Privat eller delad mapp</string>
-    <string name="gallerySortDateAdded">Datum tillagt</string>
-    <string name="gallerySortDateModified">Ändringsdatum</string>
-    <string name="gallerySortDateTaken">Fotodatum</string>
-    <string name="gallerySortTitle">Sortera efter</string>
     <string name="galleryTitle">Galleri</string>
     <string name="hintInputDirName">Mappnamn</string>
     <string name="hintInputFileName">Filnamn</string>

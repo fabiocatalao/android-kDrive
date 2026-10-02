@@ -465,6 +465,10 @@
     <string name="fileTypeFilterTitle">Tipo de ficheiro</string>
     <string name="filtersTitle">Filtros</string>
     <string name="folderDescription">Pasta privada ou partilhada</string>
+    <string name="gallerySortDateAdded">Data de adição</string>
+    <string name="gallerySortDateModified">Data de modificação</string>
+    <string name="gallerySortDateTaken">Data de captura</string>
+    <string name="gallerySortTitle">Ordenar por</string>
     <string name="galleryTitle">Galeria</string>
     <string name="hintInputDirName">Nome da pasta</string>
     <string name="hintInputFileName">Nome do ficheiro</string>

@@ -29,6 +29,7 @@ import com.infomaniak.drive.data.models.File.SortType
 import com.infomaniak.drive.data.models.SyncSettings.SavePicturesDate
 import com.infomaniak.drive.ui.bottomSheetDialogs.BackgroundSyncPermissionsBottomSheetDialog.Companion.manufacturerWarning
 import com.infomaniak.drive.ui.home.RootFileTreeCategory
+import com.infomaniak.drive.ui.menu.GallerySort
 import com.infomaniak.drive.utils.Utils
 
 class UiSettings(context: Context) : SharedValues {
@@ -56,6 +57,7 @@ class UiSettings(context: Context) : SharedValues {
     //endregion
 
     var bottomNavigationSelectedItem by sharedValue("bottomNavigationSelectedItem", R.id.hostFragment)
+    var gallerySort by sharedValue("gallerySort", GallerySort.DATE_TAKEN)
     var lastVisitedRootFileTreeCategory by sharedValueWithOrdinal<RootFileTreeCategory>("lastVisitedRootFileTreeCategory", null)
     var hasDisplayedSyncDialog by sharedValue("hasDisplayedSyncDialog", false)
     var listMode by sharedValue("listMode", true)

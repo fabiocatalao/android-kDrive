@@ -465,6 +465,10 @@
     <string name="fileTypeFilterTitle">Dateityp</string>
     <string name="filtersTitle">Filter</string>
     <string name="folderDescription">Privater oder freigegebener Ordner</string>
+    <string name="gallerySortDateAdded">Hinzufügedatum</string>
+    <string name="gallerySortDateModified">Änderungsdatum</string>
+    <string name="gallerySortDateTaken">Aufnahmedatum</string>
+    <string name="gallerySortTitle">Sortieren nach</string>
     <string name="galleryTitle">Galerie</string>
     <string name="hintInputDirName">Name des Ordners</string>
     <string name="hintInputFileName">Name der Datei</string>

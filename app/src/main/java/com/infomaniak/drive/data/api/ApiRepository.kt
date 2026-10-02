@@ -210,9 +210,9 @@ object ApiRepository : ApiRepositoryCore() {
         return callApiWithCursor(url, GET)
     }
 
-    fun getLastGallery(driveId: Int, cursor: String?): CursorApiResponse<ArrayList<File>> {
+    fun getLastGallery(driveId: Int, sortType: SortType, cursor: String?): CursorApiResponse<ArrayList<File>> {
         val types = "&types[]=${ExtensionType.IMAGE.value}&types[]=${ExtensionType.VIDEO.value}"
-        val url = "${ApiRoutes.searchFiles(driveId, SortType.RECENT)}$types&${loadCursor(cursor)}"
+        val url = "${ApiRoutes.searchFiles(driveId, sortType)}$types&${loadCursor(cursor)}"
         return callApiWithCursor(url, GET)
     }
 

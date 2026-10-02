@@ -465,6 +465,10 @@
     <string name="fileTypeFilterTitle">Τύπος αρχείου</string>
     <string name="filtersTitle">Φίλτρα</string>
     <string name="folderDescription">Ιδιωτικός ή κοινόχρηστος φάκελος</string>
+    <string name="gallerySortDateAdded">Ημερομηνία προσθήκης</string>
+    <string name="gallerySortDateModified">Ημερομηνία τροποποίησης</string>
+    <string name="gallerySortDateTaken">Ημερομηνία λήψης</string>
+    <string name="gallerySortTitle">Ταξινόμηση κατά</string>
     <string name="galleryTitle">Συλλογή</string>
     <string name="hintInputDirName">Όνομα φακέλου</string>
     <string name="hintInputFileName">Όνομα αρχείου</string>

@@ -465,6 +465,10 @@
     <string name="fileTypeFilterTitle">Tipo di file</string>
     <string name="filtersTitle">Filtri</string>
     <string name="folderDescription">Cartella personale o condivisa</string>
+    <string name="gallerySortDateAdded">Data di aggiunta</string>
+    <string name="gallerySortDateModified">Data di modifica</string>
+    <string name="gallerySortDateTaken">Data dello scatto</string>
+    <string name="gallerySortTitle">Ordina per</string>
     <string name="galleryTitle">Galleria</string>
     <string name="hintInputDirName">Nome della cartella</string>
     <string name="hintInputFileName">Nome del file</string>

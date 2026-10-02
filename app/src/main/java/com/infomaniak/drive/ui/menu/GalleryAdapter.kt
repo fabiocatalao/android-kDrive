@@ -39,7 +39,6 @@ import com.infomaniak.drive.utils.loadAny
 class GalleryAdapter(
     private val multiSelectManager: MultiSelectManager,
     private var period: GalleryPeriod,
-    var sort: GallerySort,
     private val onFileClicked: (file: File) -> Unit,
 ) : LoaderAdapter<Any>(), RecyclerViewFastScroller.OnPopupTextUpdate {
 
@@ -238,7 +237,7 @@ class GalleryAdapter(
     }
 
     private fun File.getSectionTitle(): String {
-        return sort.dateOf(this).format(period.pattern).capitalizeFirstChar()
+        return getLastModifiedAt().format(period.pattern).capitalizeFirstChar()
     }
 
     fun clearGallery() {

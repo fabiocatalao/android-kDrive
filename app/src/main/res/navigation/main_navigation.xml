@@ -1184,9 +1184,6 @@
         <action
             android:id="@+id/action_menuGalleryFragment_to_galleryPeriodBottomSheetDialog"
             app:destination="@id/galleryPeriodBottomSheetDialog" />
-        <action
-            android:id="@+id/action_menuGalleryFragment_to_gallerySortBottomSheetDialog"
-            app:destination="@id/gallerySortBottomSheetDialog" />
     </fragment>
 
     <dialog
@@ -1198,17 +1195,6 @@
             android:name="period"
             android:defaultValue="MONTH"
             app:argType="com.infomaniak.drive.ui.menu.GalleryPeriod" />
-    </dialog>
-
-    <dialog
-        android:id="@+id/gallerySortBottomSheetDialog"
-        android:name="com.infomaniak.drive.ui.menu.GallerySortBottomSheetDialog"
-        android:label="GallerySortBottomSheetDialog"
-        tools:layout="@layout/fragment_bottom_sheet_select">
-        <argument
-            android:name="sort"
-            android:defaultValue="DATE_TAKEN"
-            app:argType="com.infomaniak.drive.ui.menu.GallerySort" />
     </dialog>
 
     <fragment

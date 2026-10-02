@@ -1010,7 +1010,6 @@ object FileController {
             SortType.RECENT -> sort(File::lastModifiedAt.name, Sort.DESCENDING)
             SortType.OLDEST_ADDED -> sort(File::addedAt.name, Sort.ASCENDING)
             SortType.MOST_RECENT_ADDED -> sort(File::addedAt.name, Sort.DESCENDING)
-            SortType.RECENT_CREATED -> sort(File::createdAt.name, Sort.DESCENDING)
             SortType.OLDER_TRASHED -> sort(File::deletedAt.name, Sort.ASCENDING)
             SortType.RECENT_TRASHED -> sort(File::deletedAt.name, Sort.DESCENDING)
             SortType.SMALLER -> sort(File::size.name, Sort.ASCENDING)

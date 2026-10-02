@@ -1,0 +1,268 @@
+# Keeps this fork on top of Infomaniak's kDrive and builds an APK of it.
+#
+# On main (daily schedule, manual run, or a push to main):
+#   1. Rebases the fork's own commits onto the latest upstream release (.github/fork-sync/sync.sh).
+#   2. Builds the release APK, signed with the fork's key.
+#   3. Force-pushes the rebased main (only once the build passed) and publishes a GitHub release.
+#   A rebase conflict or a failed build leaves main untouched and opens a "fork-sync" issue.
+# On pull requests to main: only builds, so a change can be tried before it lands.
+#
+# Setup and configuration: .github/fork-sync/README.md
+
+name: Fork sync
+
+on:
+  schedule:
+    - cron: "17 5 * * *" # Every day at 05:17 UTC
+  workflow_dispatch:
+    inputs:
+      upstream_ref:
+        description: Upstream tag, branch or commit to rebase onto (empty = latest upstream release)
+        required: false
+        default: ""
+      force_release:
+        description: Build and publish a release even if nothing changed
+        type: boolean
+        default: false
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: fork-sync-${{ github.event.pull_request.number || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  FLAVOR: ${{ vars.KDRIVE_FLAVOR || 'standard' }}
+  UPSTREAM_TRACK: ${{ vars.UPSTREAM_TRACK || 'release' }}
+  ISSUE_LABEL: fork-sync
+  BOT_NAME: github-actions[bot]
+  BOT_EMAIL: 41898233+github-actions[bot]@users.noreply.github.com
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  sync:
+    name: ${{ github.event_name == 'pull_request' && 'Build' || 'Sync and build' }}
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      IS_MAIN: ${{ github.event_name != 'pull_request' }}
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          # Sync the latest main, not the commit that triggered the run.
+          ref: ${{ github.event_name != 'pull_request' && 'main' || '' }}
+          fetch-depth: ${{ github.event_name == 'pull_request' && 1 || 0 }}
+          # Pushing the rebased main needs a token that may update workflow files (see the README).
+          token: ${{ github.event_name != 'pull_request' && secrets.SYNC_TOKEN || github.token }}
+
+      - name: Rebase onto upstream
+        id: sync
+        if: env.IS_MAIN == 'true'
+        env:
+          ABORT_ON_CONFLICT: "1"
+          UPSTREAM_REF: ${{ inputs.upstream_ref }}
+        run: |
+          git config user.name "$BOT_NAME"
+          git config user.email "$BOT_EMAIL"
+          .github/fork-sync/sync.sh "$UPSTREAM_REF"
+
+      - name: Decide what to do
+        id: plan
+        env:
+          REBASED: ${{ steps.sync.outputs.rebased }}
+          TARGET: ${{ steps.sync.outputs.target }}
+          FORCE_RELEASE: ${{ inputs.force_release }}
+          HAS_SYNC_TOKEN: ${{ secrets.SYNC_TOKEN != '' }}
+        run: |
+          fail() { echo "reason=$1" >> "$GITHUB_OUTPUT"; echo "::error::$1"; exit 1; }
+          plan() { # plan <build> <push> <release> [<why>]
+            [[ -z "${4:-}" ]] || echo "::notice::$4"
+            printf 'build=%s\npush=%s\nrelease=%s\n' "$1" "$2" "$3" >> "$GITHUB_OUTPUT"
+          }
+
+          [[ "$FLAVOR" == standard || "$FLAVOR" == fdroid ]] ||
+            fail "The KDRIVE_FLAVOR variable must be 'standard' or 'fdroid', not '$FLAVOR'."
+
+          if [[ "$IS_MAIN" != true ]]; then
+            plan true false false
+          elif [[ "$REBASED" == true ]]; then
+            [[ "$HAS_SYNC_TOKEN" == true ]] ||
+              fail "main was rebased onto upstream $TARGET but can't be pushed: add a SYNC_TOKEN secret (a fine-grained token with read and write access to Contents and Workflows on this repository). The default token may not push commits that touch .github/workflows."
+            plan true true true
+          else
+            released="$(git tag --points-at HEAD --list '*-fork-*' | head -n 1)"
+            if [[ "$FORCE_RELEASE" == true ]]; then
+              plan true false true
+            elif [[ -n "$released" ]]; then
+              plan false false false "main is up to date with upstream $TARGET and already released as $released."
+            elif [[ "$GITHUB_EVENT_NAME" == schedule ]]; then
+              plan false false false "main is up to date with upstream $TARGET."
+            elif [[ "$GITHUB_EVENT_NAME" == push && "$(git log -1 --format=%ce)" == "$BOT_EMAIL" ]]; then
+              plan false false false "main was pushed by a previous sync run, which already built it."
+            else
+              plan true false true
+            fi
+          fi
+
+      - name: Check out submodules
+        if: steps.plan.outputs.build == 'true'
+        # Core's submodule URL uses SSH; it's a public repository, so HTTPS works without credentials.
+        run: git -c 'url.https://github.com/.insteadOf=git@github.com:' submodule update --init --recursive
+
+      - name: Set up JDK
+        if: steps.plan.outputs.build == 'true'
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        if: steps.plan.outputs.build == 'true'
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      - name: Build APK
+        id: build
+        if: steps.plan.outputs.build == 'true'
+        env:
+          GENIUS_SCAN_KEY: ${{ secrets.GENIUS_SCAN_KEY }}
+          KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          # Release builds refuse to configure without a Sentry token. It is never used:
+          # the init script skips every upload to Infomaniak's Sentry.
+          echo "sentryAuthToken=unused" > env.properties
+
+          if [[ "$FLAVOR" == standard ]]; then
+            printf 'package com.infomaniak.drive\n\nobject GeniusScanEnv {\n    const val GENIUS_SCAN_KEY = "%s"\n}\n' \
+              "$GENIUS_SCAN_KEY" > app/src/standard/java/com/infomaniak/drive/GeniusScanEnv.kt
+          fi
+
+          # --stacktrace: some failures (packaging, for one) only name their cause in the stack trace.
+          args=(--stacktrace --init-script .github/fork-sync/skip-sentry-upload.init.gradle)
+          if [[ -n "$KEYSTORE_BASE64" ]]; then
+            base64 --decode <<< "$KEYSTORE_BASE64" > "$RUNNER_TEMP/release.keystore"
+            args+=(
+              -Pandroid.injected.signing.store.file="$RUNNER_TEMP/release.keystore"
+              -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD"
+              -Pandroid.injected.signing.key.alias="$KEY_ALIAS"
+              -Pandroid.injected.signing.key.password="${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+            )
+          fi
+
+          ./gradlew "${args[@]}" "assemble${FLAVOR^}Release"
+
+      - name: Show runner resources after a failed build
+        if: failure() && steps.build.outcome == 'failure'
+        run: |
+          df -h / "$RUNNER_TEMP"
+          free -m
+          sudo dmesg | tail -n 20 || true
+
+      - name: Collect APK
+        id: apk
+        if: steps.plan.outputs.build == 'true'
+        env:
+          SIGNED: ${{ secrets.SIGNING_KEYSTORE_BASE64 != '' }}
+        run: |
+          rm -f "$RUNNER_TEMP/release.keystore"
+          apk="$(find "app/build/outputs/apk/$FLAVOR/release" -name '*.apk' -print -quit)"
+          [[ -n "$apk" ]] || { echo "::error::The build produced no APK."; exit 1; }
+
+          version="$(sed -nE 's/^ *versionName = "([^"]+)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          name="kdrive-$version-fork-$(git rev-parse --short=9 HEAD)-$FLAVOR"
+          if [[ "$SIGNED" == true ]]; then
+            build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 | sort -V | tail -n 1)"
+            "$build_tools/apksigner" verify --print-certs "$apk"
+          else
+            name+="-unsigned"
+            echo "::warning::No signing key is configured (SIGNING_* secrets), so the APK is unsigned and no release is published."
+          fi
+
+          mkdir -p dist
+          cp "$apk" "dist/$name.apk"
+          printf 'version=%s\nname=%s\nfile=%s\nsigned=%s\n' "$version" "$name" "dist/$name.apk" "$SIGNED" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK
+        if: steps.apk.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.apk.outputs.name }}
+          path: ${{ steps.apk.outputs.file }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Push rebased main
+        id: push
+        if: steps.plan.outputs.push == 'true'
+        env:
+          OLD_HEAD: ${{ steps.sync.outputs.old_head }}
+        run: git push --force-with-lease="main:$OLD_HEAD" origin HEAD:main
+
+      - name: Publish release
+        id: release
+        if: steps.plan.outputs.release == 'true' && steps.apk.outputs.signed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ steps.sync.outputs.target_sha }}
+          VERSION: ${{ steps.apk.outputs.version }}
+          APK_FILE: ${{ steps.apk.outputs.file }}
+        run: |
+          sha="$(git rev-parse HEAD)"
+          tag="$VERSION-fork-${sha:0:9}"
+          base="$(git merge-base HEAD refs/remotes/upstream/main "$TARGET_SHA")"
+          {
+            echo "Infomaniak kDrive **$VERSION** with this fork's changes, built from \`${sha:0:9}\` (\`$FLAVOR\` flavor)."
+            echo
+            echo "Upstream base: [\`${base:0:9}\`](https://github.com/Infomaniak/android-kDrive/commit/$base). Fork commits:"
+            echo
+            git log --reverse --no-merges --format='- %s (%h)' "$base..HEAD"
+            echo
+            echo "Signed with this fork's key: it updates earlier builds of this fork, but can't be installed over the Play Store or F-Droid app."
+          } > "$RUNNER_TEMP/notes.md"
+
+          if gh release view "$tag" > /dev/null 2>&1; then
+            gh release delete "$tag" --cleanup-tag --yes
+          fi
+          gh release create "$tag" "$APK_FILE" --target "$sha" --latest \
+            --title "kDrive $VERSION (fork ${sha:0:9})" --notes-file "$RUNNER_TEMP/notes.md"
+
+      - name: Close the sync issue
+        # Only a run that built main proves the reported problem is gone.
+        if: success() && env.IS_MAIN == 'true' && steps.plan.outputs.build == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .github/fork-sync/report.sh success
+
+      - name: Report the failure in an issue
+        if: failure() && env.IS_MAIN == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SYNC_OUTCOME: ${{ steps.sync.outcome }}
+          PLAN_OUTCOME: ${{ steps.plan.outcome }}
+          PLAN_REASON: ${{ steps.plan.outputs.reason }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          PUSH_OUTCOME: ${{ steps.push.outcome }}
+          RELEASE_OUTCOME: ${{ steps.release.outcome }}
+          TARGET: ${{ steps.sync.outputs.target }}
+          TARGET_SHA: ${{ steps.sync.outputs.target_sha }}
+          REBASED: ${{ steps.sync.outputs.rebased }}
+          CONFLICT_COMMIT: ${{ steps.sync.outputs.conflict_commit }}
+          CONFLICT_SUBJECT: ${{ steps.sync.outputs.conflict_subject }}
+          CONFLICT_FILES: ${{ steps.sync.outputs.conflict_files }}
+        run: .github/fork-sync/report.sh failure

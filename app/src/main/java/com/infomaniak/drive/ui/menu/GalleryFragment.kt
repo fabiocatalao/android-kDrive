@@ -47,6 +47,7 @@ import com.infomaniak.drive.databinding.FragmentGalleryBinding
 import com.infomaniak.drive.databinding.FragmentMenuGalleryBinding
 import com.infomaniak.drive.databinding.MultiSelectLayoutBinding
 import com.infomaniak.drive.extensions.onApplyWindowInsetsListener
+import com.infomaniak.drive.ui.fileList.DragSelectTouchListener
 import com.infomaniak.drive.ui.fileList.multiSelect.MultiSelectFragment
 import com.infomaniak.drive.utils.AccountUtils
 import com.infomaniak.drive.utils.Utils
@@ -127,6 +128,7 @@ class GalleryFragment : MultiSelectFragment(
         with(binding) {
             galleryRecyclerView.adapter = galleryAdapter
             configGalleryLayoutManager()
+            setupDragSelection()
 
             noGalleryLayout.iNoItemsLayoutView = this@GalleryFragment
 
@@ -252,6 +254,36 @@ class GalleryFragment : MultiSelectFragment(
         }
 
         binding.galleryRecyclerView.layoutManager = gridLayoutManager
+    }
+
+    private fun setupDragSelection() {
+        val dragSelectTouchListener = DragSelectTouchListener(
+            recyclerView = binding.galleryRecyclerView,
+            callback = object : DragSelectTouchListener.DragSelectCallback {
+                override fun isMultiSelectAuthorized() = multiSelectManager.isMultiSelectAuthorized
+                override fun isMultiSelectOn() = multiSelectManager.isMultiSelectOn
+
+                override fun onDragSelectStarted(startPosition: Int) {
+                    // openMultiSelect() also disables the swipe refresh, so it can't start while dragging
+                    if (!multiSelectManager.isMultiSelectOn) openMultiSelect()
+                    galleryAdapter.setFilesSelectedInRange(startPosition, startPosition, isSelected = true)
+                }
+
+                override fun onDragSelectChanged(start: Int, end: Int) {
+                    galleryAdapter.setFilesSelectedInRange(start, end, isSelected = true)
+                }
+
+                override fun onDragSelectRangeDeselected(start: Int, end: Int) {
+                    galleryAdapter.setFilesSelectedInRange(start, end, isSelected = false)
+                }
+
+                override fun onDragSelectFinished() = Unit
+
+                // Section titles share the list with the files, and can't be selected
+                override fun isPositionSelectable(position: Int) = galleryAdapter.isFileSelectableAt(position)
+            }
+        )
+        binding.galleryRecyclerView.addOnItemTouchListener(dragSelectTouchListener)
     }
 
     private fun loadGallery(driveId: Int, isRefresh: Boolean = false) {

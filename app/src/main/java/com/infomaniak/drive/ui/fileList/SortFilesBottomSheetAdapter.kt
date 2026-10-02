@@ -63,7 +63,6 @@ class SortFilesBottomSheetAdapter(
             SortType.RECENT_TRASHED,
             SortType.LEAST_RELEVANT,
             SortType.MOST_RELEVANT,
-            SortType.RECENT_CREATED,
         )
         return filterNot(forbiddenSortTypes::contains)
     }
@@ -74,7 +73,6 @@ class SortFilesBottomSheetAdapter(
             SortType.RECENT,
             SortType.LEAST_RELEVANT,
             SortType.MOST_RELEVANT,
-            SortType.RECENT_CREATED,
         )
         return filterNot(forbiddenSortTypes::contains)
     }

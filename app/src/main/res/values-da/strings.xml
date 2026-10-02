@@ -465,10 +465,6 @@
     <string name="fileTypeFilterTitle">Filtype</string>
     <string name="filtersTitle">Filtre</string>
     <string name="folderDescription">Privat eller delt mappe</string>
-    <string name="gallerySortDateAdded">Dato tilføjet</string>
-    <string name="gallerySortDateModified">Ændringsdato</string>
-    <string name="gallerySortDateTaken">Optagelsesdato</string>
-    <string name="gallerySortTitle">Sortér efter</string>
     <string name="galleryTitle">Galleri</string>
     <string name="hintInputDirName">Mappenavn</string>
     <string name="hintInputFileName">Filnavn</string>

@@ -19,12 +19,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/selectGallerySort"
-        android:icon="@drawable/ic_gallery_sort"
-        android:title="@string/gallerySortTitle"
-        app:showAsAction="always" />
-
-    <item
         android:id="@+id/selectGalleryPeriod"
         android:icon="@drawable/ic_filter"
         android:title="@string/sortTitle"

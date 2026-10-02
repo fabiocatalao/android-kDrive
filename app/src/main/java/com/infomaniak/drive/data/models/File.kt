@@ -450,7 +450,6 @@ open class File(
         RECENT_TRASHED("desc", "deleted_at", R.string.sortRecent),
         OLDEST_ADDED("asc", "added_at", R.string.sortOldestAdded),
         MOST_RECENT_ADDED("desc", "added_at", R.string.sortMostRecentAdded),
-        RECENT_CREATED("desc", "created_at", R.string.sortRecent), // Only used by the gallery
         SMALLER("asc", "size", R.string.sortSmaller),
         BIGGER("desc", "size", R.string.sortBigger),
         LEAST_RELEVANT("asc", "relevance", R.string.sortLeastRelevant),

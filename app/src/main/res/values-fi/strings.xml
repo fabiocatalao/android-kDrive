@@ -465,10 +465,6 @@
     <string name="fileTypeFilterTitle">Tiedostotyyppi</string>
     <string name="filtersTitle">Suodattimet</string>
     <string name="folderDescription">Yksityinen tai jaettu kansio</string>
-    <string name="gallerySortDateAdded">Lisäyspäivä</string>
-    <string name="gallerySortDateModified">Muokkauspäivä</string>
-    <string name="gallerySortDateTaken">Kuvauspäivä</string>
-    <string name="gallerySortTitle">Lajitteluperuste</string>
     <string name="galleryTitle">Galleria</string>
     <string name="hintInputDirName">Kansion nimi</string>
     <string name="hintInputFileName">Tiedoston nimi</string>

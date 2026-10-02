@@ -153,7 +153,8 @@ jobs:
               "$GENIUS_SCAN_KEY" > app/src/standard/java/com/infomaniak/drive/GeniusScanEnv.kt
           fi
 
-          args=(--init-script .github/fork-sync/skip-sentry-upload.init.gradle)
+          # --stacktrace: some failures (packaging, for one) only name their cause in the stack trace.
+          args=(--stacktrace --init-script .github/fork-sync/skip-sentry-upload.init.gradle)
           if [[ -n "$KEYSTORE_BASE64" ]]; then
             base64 --decode <<< "$KEYSTORE_BASE64" > "$RUNNER_TEMP/release.keystore"
             args+=(
@@ -165,6 +166,13 @@ jobs:
           fi
 
           ./gradlew "${args[@]}" "assemble${FLAVOR^}Release"
+
+      - name: Show runner resources after a failed build
+        if: failure() && steps.build.outcome == 'failure'
+        run: |
+          df -h / "$RUNNER_TEMP"
+          free -m
+          sudo dmesg | tail -n 20 || true
 
       - name: Collect APK
         id: apk

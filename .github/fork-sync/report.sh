@@ -106,7 +106,7 @@ report_failure() {
         return
     fi
 
-    gh label create "$label" --color D93F0B --description "Problems syncing this fork with upstream" 2> /dev/null || true
+    gh label create "$label" --force --color D93F0B --description "Problems syncing this fork with upstream" || true
     gh issue create --title "$title" --body "$body" --label "$label" --assignee "$GITHUB_REPOSITORY_OWNER" ||
         gh issue create --title "$title" --body "$body" --label "$label"
 }

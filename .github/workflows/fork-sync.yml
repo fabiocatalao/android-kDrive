@@ -41,6 +41,8 @@ env:
   FLAVOR: ${{ vars.KDRIVE_FLAVOR || 'standard' }}
   UPSTREAM_TRACK: ${{ vars.UPSTREAM_TRACK || 'release' }}
   ISSUE_LABEL: fork-sync
+  # sync.sh adds an "upstream" remote, which gh would otherwise pick over origin.
+  GH_REPO: ${{ github.repository }}
   BOT_NAME: github-actions[bot]
   BOT_EMAIL: 41898233+github-actions[bot]@users.noreply.github.com
 
@@ -154,7 +156,13 @@ jobs:
           fi
 
           # --stacktrace: some failures (packaging, for one) only name their cause in the stack trace.
-          args=(--stacktrace --init-script .github/fork-sync/skip-sentry-upload.init.gradle)
+          # The project's 4 GB Gradle heap runs out while packaging and signing the ~190 MB APK;
+          # the runner has 16 GB, so give Gradle 6 GB and keep Kotlin's daemon at its usual 4 GB.
+          args=(
+            --stacktrace
+            --init-script .github/fork-sync/skip-sentry-upload.init.gradle
+            "-Dorg.gradle.jvmargs=-Xmx6g -Dkotlin.daemon.jvm.options=-Xmx4g"
+          )
           if [[ -n "$KEYSTORE_BASE64" ]]; then
             base64 --decode <<< "$KEYSTORE_BASE64" > "$RUNNER_TEMP/release.keystore"
             args+=(

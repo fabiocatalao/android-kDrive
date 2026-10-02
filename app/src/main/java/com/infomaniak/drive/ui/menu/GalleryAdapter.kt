@@ -86,6 +86,17 @@ class GalleryAdapter(
         }
     }
 
+    override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: List<Any>) {
+        val binding = (holder as GalleryViewHolder).binding
+        val file = itemList.getOrNull(position) as? File
+        if (payloads.isNotEmpty() && payloads.all { it == SELECTION_PAYLOAD } && binding is CardviewGalleryBinding && file != null) {
+            // Only the checkmark changed, so the thumbnail isn't reloaded
+            binding.handleCheckmark(file)
+        } else {
+            super.onBindViewHolder(holder, position, payloads)
+        }
+    }
+
     private fun CardviewGalleryBinding.bindGalleryDisplayType(position: Int) {
         val file = (itemList[position] as File)
         displayThumbnail(file)
@@ -119,11 +130,15 @@ class GalleryAdapter(
     private fun CardviewGalleryBinding.setupCardClicksListeners(file: File) = with(multiSelectManager) {
 
         root.apply {
-            setOnClickListener { if (isMultiSelectOn) mediaChecked.onFileSelected(file) else onFileClicked(file) }
+            setOnClickListener {
+                if (isMultiSelectOn) mediaChecked.onFileSelected(file, !isSelectedFile(file)) else onFileClicked(file)
+            }
 
             setOnLongClickListener {
                 if (isMultiSelectAuthorized) {
-                    mediaChecked.onFileSelected(file)
+                    // Select rather than toggle: the drag-select listener handles the same long press and may have
+                    // selected the file already, and a toggle would then unselect it
+                    mediaChecked.onFileSelected(file, isSelected = true)
                     if (!isMultiSelectOn) openMultiSelect?.invoke()
                     true
                 } else {
@@ -133,22 +148,36 @@ class GalleryAdapter(
         }
     }
 
-    private fun MaterialCheckBox.onFileSelected(file: File) = with(multiSelectManager) {
-        isChecked = !isChecked
+    private fun MaterialCheckBox.onFileSelected(file: File, isSelected: Boolean) {
+        setFileSelected(file, isSelected)
+        isChecked = multiSelectManager.isSelectedFile(file)
+    }
 
+    private fun setFileSelected(file: File, isSelected: Boolean) = with(multiSelectManager) {
         if (file.isUsable()) {
-            if (isChecked) {
-                selectedItemsIds.add(file.id)
-                selectedItems.add(file)
+            if (isSelected) {
+                if (selectedItemsIds.add(file.id)) selectedItems.add(file)
             } else {
-                selectedItemsIds.remove(file.id)
-                selectedItems.remove(file)
+                if (selectedItemsIds.remove(file.id)) selectedItems.remove(file)
             }
         } else {
             resetSelectedItems()
         }
 
         updateMultiSelect?.invoke()
+    }
+
+    fun isFileSelectableAt(position: Int): Boolean = (itemList.getOrNull(position) as? File)?.isUsable() == true
+
+    /** Section titles in the range are skipped, so [start] and [end] are adapter positions, not file indexes. */
+    fun setFilesSelectedInRange(start: Int, end: Int, isSelected: Boolean) {
+        for (position in start..end) {
+            val file = itemList.getOrNull(position) as? File ?: continue
+            if (!file.isUsable() || multiSelectManager.isSelectedFile(file) == isSelected) continue
+
+            setFileSelected(file, isSelected)
+            notifyItemChanged(position, SELECTION_PAYLOAD)
+        }
     }
 
     /**
@@ -284,4 +313,8 @@ class GalleryAdapter(
     }
 
     class GalleryViewHolder(val binding: ViewBinding) : ViewHolder(binding.root)
+
+    companion object {
+        private val SELECTION_PAYLOAD = Any()
+    }
 }

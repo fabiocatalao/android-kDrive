@@ -110,6 +110,7 @@ class GalleryFragment : MultiSelectFragment(
             galleryAdapter = GalleryAdapter(
                 multiSelectManager = multiSelectManager,
                 period = galleryViewModel.period.value,
+                sort = galleryViewModel.sort.value,
                 onFileClicked = { file ->
                     Utils.displayFile(mainViewModel, findNavController(), file, galleryAdapter.galleryList)
                 },
@@ -157,6 +158,7 @@ class GalleryFragment : MultiSelectFragment(
 
         observeApiResultPagination()
         observePeriod()
+        observeSort()
 
         mainViewModel.deleteFilesFromGallery.observe(viewLifecycleOwner) { filesId ->
             filesId.forEach(galleryAdapter::deleteByFileId)
@@ -277,6 +279,21 @@ class GalleryFragment : MultiSelectFragment(
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 galleryViewModel.period.collect(galleryAdapter::updatePeriod)
+            }
+        }
+    }
+
+    private fun observeSort() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                galleryViewModel.sort.collect { sort ->
+                    if (sort == galleryAdapter.sort) return@collect
+
+                    // The API returns files already sorted, so a new sort needs a full reload
+                    galleryAdapter.sort = sort
+                    galleryAdapter.clearGallery()
+                    loadGallery(AccountUtils.currentDriveId, isRefresh = true)
+                }
             }
         }
     }

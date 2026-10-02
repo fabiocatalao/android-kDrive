@@ -71,17 +71,28 @@ class MenuGalleryFragment : Fragment() {
         swipeRefreshLayout.setOnRefreshListener(galleryFragment::onRefreshGallery)
 
         toolbar.setOnMenuItemClickListener { menuItem ->
-            if (menuItem.itemId == R.id.selectGalleryPeriod) {
-                safeNavigate(
-                    MenuGalleryFragmentDirections.actionMenuGalleryFragmentToGalleryPeriodBottomSheetDialog(
-                        galleryViewModel.period.value,
+            when (menuItem.itemId) {
+                R.id.selectGallerySort -> {
+                    safeNavigate(
+                        MenuGalleryFragmentDirections.actionMenuGalleryFragmentToGallerySortBottomSheetDialog(
+                            galleryViewModel.sort.value,
+                        )
                     )
-                )
-                true
-            } else {
-                false
+                    true
+                }
+                R.id.selectGalleryPeriod -> {
+                    safeNavigate(
+                        MenuGalleryFragmentDirections.actionMenuGalleryFragmentToGalleryPeriodBottomSheetDialog(
+                            galleryViewModel.period.value,
+                        )
+                    )
+                    true
+                }
+                else -> false
             }
         }
+
+        getBackNavigationResult<GallerySort>(GallerySortBottomSheetDialog.GALLERY_SORT_KEY, galleryViewModel::setSort)
 
         getBackNavigationResult<GalleryPeriod>(GalleryPeriodBottomSheetDialog.GALLERY_PERIOD_KEY) {
             galleryViewModel.period.value = it

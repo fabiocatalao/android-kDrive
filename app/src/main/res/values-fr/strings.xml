@@ -465,6 +465,10 @@
     <string name="fileTypeFilterTitle">Type de fichier</string>
     <string name="filtersTitle">Filtres</string>
     <string name="folderDescription">Dossier privé ou partagé</string>
+    <string name="gallerySortDateAdded">Date d\'ajout</string>
+    <string name="gallerySortDateModified">Date de modification</string>
+    <string name="gallerySortDateTaken">Date de prise de vue</string>
+    <string name="gallerySortTitle">Trier par</string>
     <string name="galleryTitle">Galerie</string>
     <string name="hintInputDirName">Nom du dossier</string>
     <string name="hintInputFileName">Nom du fichier</string>
